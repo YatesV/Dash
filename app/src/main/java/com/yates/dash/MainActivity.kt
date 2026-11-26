@@ -323,7 +323,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
             val done = entries.count { it.startsWith("1::") }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 PixelText(if (checkable) "PROGRESS" else "SAVED ITEMS", Mint, 7)
-                PixelText("\${entries.size} ITEMS", Neon, 7)
+                PixelText("${entries.size} ITEMS", Neon, 7)
             }
             if (checkable) {
                 Spacer(Modifier.height(10.dp))
@@ -331,7 +331,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
                     Box(Modifier.fillMaxWidth(if (entries.isEmpty()) 0f else done.toFloat() / entries.size).fillMaxHeight().background(Neon))
                 }
                 Spacer(Modifier.height(7.dp))
-                Text("\$done OF \${entries.size} COMPLETED", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                Text("$done OF ${entries.size} COMPLETED", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
             } else {
                 Spacer(Modifier.height(8.dp))
                 Text("Your notes are saved on this device.", color = Dim, fontSize = 11.sp)
@@ -346,7 +346,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
             NeonPanel(Modifier.fillMaxWidth()) {
                 PixelText("NOTHING HERE YET", Mint, 8)
                 Spacer(Modifier.height(8.dp))
-                Text("Tap \$addLabel to create your first item.", color = Dim, fontSize = 11.sp)
+                Text("Tap $addLabel to create your first item.", color = Dim, fontSize = 11.sp)
             }
         } else {
             entries.toList().forEach { entry ->
