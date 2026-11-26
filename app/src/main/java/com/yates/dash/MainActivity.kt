@@ -24,6 +24,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +55,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.net.HttpURLConnection
+import java.net.URL
+import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private data class DashPalette(
     val name: String, val background: Color, val panel: Color, val panel2: Color,
@@ -80,6 +91,32 @@ private fun DashApp() {
     val prefs = remember { context.getSharedPreferences("dash_appearance", android.content.Context.MODE_PRIVATE) }
     var started by remember { mutableStateOf(false) }
     var active by remember { mutableStateOf("HOME") }
+    var updateUrl by remember { mutableStateOf<String?>(null) }
+    var updateVersion by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val update = withContext(Dispatchers.IO) {
+            runCatching {
+                val connection = (URL("https://api.github.com/repos/YatesV/Dash/releases/latest").openConnection() as HttpURLConnection)
+                connection.connectTimeout = 6000
+                connection.readTimeout = 6000
+                connection.setRequestProperty("Accept", "application/vnd.github+json")
+                val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                connection.disconnect()
+                val latestTag = json.optString("tag_name")
+                val latestUrl = json.optString("html_url")
+                val installed = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0.0"
+                fun parts(v: String) = v.trimStart('v', 'V').split('.', '-').map { it.toIntOrNull() ?: 0 }
+                val a = parts(latestTag); val b = parts(installed)
+                val newer = (0 until maxOf(a.size, b.size)).firstNotNullOfOrNull { i ->
+                    val av = a.getOrElse(i) { 0 }; val bv = b.getOrElse(i) { 0 }
+                    if (av == bv) null else av > bv
+                } ?: false
+                if (newer && latestUrl.startsWith("https://github.com/")) latestTag to latestUrl else null
+            }.getOrNull()
+        }
+        updateVersion = update?.first
+        updateUrl = update?.second
+    }
     var palette by remember {
         mutableStateOf(DefaultPalette.copy(
             name = prefs.getString("theme_name", DefaultPalette.name) ?: DefaultPalette.name,
@@ -107,7 +144,7 @@ private fun DashApp() {
     }
     androidx.compose.runtime.CompositionLocalProvider(LocalPalette provides palette) {
         if (!started) StartScreen { started = true }
-        else MainDashboard(active = active, onNavigate = { active = it }, onPaletteChange = ::updatePalette)
+        else MainDashboard(active = active, onNavigate = { active = it }, onPaletteChange = ::updatePalette, updateVersion = updateVersion, updateUrl = updateUrl)
     }
 }
 
@@ -177,7 +214,7 @@ private fun StartScreen(onStart: () -> Unit) {
 }
 
 @Composable
-private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPaletteChange: (DashPalette) -> Unit) {
+private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPaletteChange: (DashPalette) -> Unit, updateVersion: String?, updateUrl: String?) {
     val palette = LocalPalette.current
     var dragX by remember { mutableFloatStateOf(0f) }
     var dragY by remember { mutableFloatStateOf(0f) }
@@ -197,6 +234,17 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPalett
     ) {
         Backdrop(Modifier.fillMaxSize(), px, py)
         Column(Modifier.fillMaxSize().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
+            if (updateVersion != null && updateUrl != null) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp).background(Neon.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).clickable { runCatching { androidx.compose.ui.platform.LocalUriHandler.current.openUri(updateUrl) } }.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("⬆", color = Neon, fontSize = 16.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("UPDATE AVAILABLE  $updateVersion", color = Neon, fontFamily = FontFamily.Monospace, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text("Tap to download the latest Dash APK", color = Mint, fontSize = 9.sp)
+                    }
+                    Text("GET  →", color = Neon, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+                }
+            }
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     PixelText("DASH", Color.White, 15)
@@ -380,7 +428,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
             }
         }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { showAdd = true }, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = { showAdd = true }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Neon, contentColor = Void)) {
             PixelText(addLabel, Color.Black, 8)
         }
         Spacer(Modifier.height(16.dp))
@@ -401,7 +449,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
                                 val position = entries.indexOf(entry)
                                 if (position >= 0) entries[position] = (if (checked) "1::" else "0::") + label
                                 save()
-                            })
+                            }, colors = CheckboxDefaults.colors(checkedColor = Neon, uncheckedColor = Dim, checkmarkColor = Void))
                         }
                         Text(label, color = if (complete) Dim else Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
                         TextButton(onClick = { entries.remove(entry); save() }) {
@@ -418,12 +466,14 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
     if (showAdd) {
         AlertDialog(
             onDismissRequest = { showAdd = false; draft = "" },
+            colors = AlertDialogDefaults.colors(containerColor = Panel, titleContentColor = Neon, textContentColor = Color.White),
             title = { PixelText(addLabel, Neon, 9) },
             text = {
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { draft = it },
-                    placeholder = { Text(if (checkable) "What do you want to do?" else "Write a quick note...") }
+                    placeholder = { Text(if (checkable) "What do you want to do?" else "Write a quick note...") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Neon, unfocusedBorderColor = Dim, focusedTextColor = Color.White, unfocusedTextColor = Color.White, cursorColor = Neon)
                 )
             },
             confirmButton = {
@@ -501,7 +551,7 @@ private fun SettingsPage(palette: DashPalette, onChange: (DashPalette) -> Unit) 
             SettingSwitch("TOUCH PARALLAX", "Depth movement while dragging", palette.parallax) { onChange(palette.copy(parallax = it)) }
             Spacer(Modifier.height(8.dp))
             Text("GLOW INTENSITY  \${(palette.glow * 100).toInt()}%", color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
-            Slider(value = palette.glow, onValueChange = { onChange(palette.copy(glow = it)) }, valueRange = 0f..2f)
+            Slider(value = palette.glow, onValueChange = { onChange(palette.copy(glow = it)) }, valueRange = 0f..2f, colors = SliderDefaults.colors(thumbColor = Neon, activeTrackColor = Neon, inactiveTrackColor = Dim))
         }
         Spacer(Modifier.height(12.dp))
         NeonPanel(Modifier.fillMaxWidth()) {
@@ -533,6 +583,6 @@ private fun SettingSwitch(title: String, description: String, checked: Boolean, 
             Text(title, color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Text(description, color = Dim, fontSize = 9.sp)
         }
-        Switch(checked = checked, onCheckedChange = onChecked)
+        Switch(checked = checked, onCheckedChange = onChecked, colors = SwitchDefaults.colors(checkedThumbColor = Void, checkedTrackColor = Neon, uncheckedThumbColor = Dim, uncheckedTrackColor = Panel2, uncheckedBorderColor = Dim))
     }
 }
