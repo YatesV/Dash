@@ -321,11 +321,11 @@ private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable Column
 private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: () -> Unit) {
     var pressed by remember { mutableStateOf(false) }
     val t = rememberInfiniteTransition(label = "cardGlow")
-    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
+    val glow = LocalPalette.current.glow\n    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
     val floatY by t.animateFloat(0f, -4f, infiniteRepeatable(tween(2100 + module.title.length * 85, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
     Column(modifier.height(106.dp)
         .graphicsLayer { translationY = floatY }
-        .shadow(12.dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f), spotColor = Neon.copy(alpha = alpha * 0.28f))
+        .shadow((18f * glow).dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.48f * glow.coerceAtMost(1.5f)), spotColor = Neon.copy(alpha = alpha * 0.42f * glow.coerceAtMost(1.5f)))
         .background(Brush.linearGradient(listOf(Color(0xFF112311), Panel2, Color(0xFF071007))), RoundedCornerShape(3.dp))
         .border(1.dp, Neon.copy(alpha = if (pressed) 1f else alpha), RoundedCornerShape(3.dp))
         .clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
