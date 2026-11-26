@@ -195,7 +195,7 @@ private fun StartScreen(onStart: () -> Unit) {
     val shimmer by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart), label = "shimmer")
     Box(Modifier.fillMaxSize().background(Void)) {
         Backdrop()
-        Column(Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.align(Alignment.Center).fillMaxWidth().safeDrawingPadding().padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             PixelText("DASH", Color.White, 30)
             Spacer(Modifier.height(22.dp))
             PixelText("YOUR LIFE. IN ONE PLACE.", Mint, 7, align = TextAlign.Center)
@@ -211,7 +211,7 @@ private fun StartScreen(onStart: () -> Unit) {
             Spacer(Modifier.height(24.dp))
             PixelText("PRESS START TO ENTER", Dim, 6, align = TextAlign.Center)
         }
-        PixelText("SYS.V 01.0", Dim, 5, Modifier.align(Alignment.BottomCenter).padding(bottom = 30.dp))
+        PixelText("SYS.V 01.0", Dim, 5, Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(bottom = 18.dp))
     }
 }
 
@@ -236,7 +236,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPalett
             } else Modifier)
     ) {
         Backdrop(Modifier.fillMaxSize(), px, py)
-        Column(Modifier.fillMaxSize().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
             if (updateVersion != null && updateUrl != null) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp).background(Neon.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).clickable { runCatching { uriHandler.openUri(updateUrl) } }.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("⬆", color = Neon, fontSize = 16.sp)
@@ -248,7 +248,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPalett
                     Text("GET  →", color = Neon, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     PixelText("DASH", Color.White, 15)
                     Spacer(Modifier.height(7.dp))
@@ -366,7 +366,7 @@ private fun SectionTitle(title: String, detail: String) {
 @Composable
 private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val glow = LocalPalette.current.glow.coerceAtMost(1.5f)
-    Column(modifier.shadow((11f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.17f * glow), spotColor = Neon.copy(alpha = 0.14f * glow)).background(Brush.linearGradient(listOf(Panel2.copy(alpha = 0.88f), Panel, Color.Black.copy(alpha = 0.78f))), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.42f * glow).coerceIn(0.14f, 0.8f)), RoundedCornerShape(4.dp)).padding(14.dp), content = content)
+    Column(modifier.shadow((11f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.22f * glow), spotColor = Neon.copy(alpha = 0.18f * glow)).background(Brush.linearGradient(listOf(Color(0xFF102719), Color(0xFF0B1911), Color(0xFF08120C))), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.62f * glow).coerceIn(0.28f, 0.9f)), RoundedCornerShape(4.dp)).padding(16.dp), content = content)
 }
 
 @Composable
@@ -379,8 +379,8 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
     Column(modifier.height(106.dp)
         .graphicsLayer { translationY = floatY }
         .shadow((10f * glow).dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f * glow.coerceAtMost(1.5f)), spotColor = Neon.copy(alpha = alpha * 0.30f * glow.coerceAtMost(1.5f)))
-        .background(Brush.linearGradient(listOf(Color(0xFF112311), Panel2, Color(0xFF071007))), RoundedCornerShape(3.dp))
-        .border(1.dp, Neon.copy(alpha = if (pressed) 1f else alpha), RoundedCornerShape(3.dp))
+        .background(Brush.linearGradient(listOf(Color(0xFF153522), Color(0xFF0D1D13), Color(0xFF09130D))), RoundedCornerShape(3.dp))
+        .border(1.dp, Neon.copy(alpha = if (pressed) 1f else maxOf(alpha, 0.48f)), RoundedCornerShape(3.dp))
         .clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(module.symbol, color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Bold)
