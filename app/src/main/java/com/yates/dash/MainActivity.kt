@@ -140,12 +140,12 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
             val sx = ((i * 79f + drift * (if (i % 2 == 0) 1 else -1) * depth + parallaxX * depth * 2f) % this.size.width + this.size.width) % this.size.width
             val sy = ((i * 137f + parallaxY * depth * 2f) % this.size.height)
             val a = if (i % 3 == 0) 0.72f else 0.28f
-            drawRect(Neon.copy(alpha = a), Offset(sx, sy), Size(if (i % 4 == 0) 3.5f else 2f, if (i % 4 == 0) 3.5f else 2f))
+            drawRect(palette.neon.copy(alpha = a), Offset(sx, sy), Size(if (i % 4 == 0) 3.5f else 2f, if (i % 4 == 0) 3.5f else 2f))
         }
         // Sweeping scan beam and soft ambient horizon glow.
         val beamY = size.height * scan
-        if (palette.scanlines) drawRect(Brush.verticalGradient(listOf(Color.Transparent, Neon.copy(alpha = 0.10f), Color.Transparent), startY = beamY - 48f, endY = beamY + 48f), Offset(0f, beamY - 48f), Size(size.width, 96f))
-        drawRect(Neon.copy(alpha = breathe), Offset(0f, size.height * 0.72f + parallaxY), Size(size.width, 1f))
+        if (palette.scanlines) drawRect(Brush.verticalGradient(listOf(Color.Transparent, palette.neon.copy(alpha = 0.10f), Color.Transparent), startY = beamY - 48f, endY = beamY + 48f), Offset(0f, beamY - 48f), Size(size.width, 96f))
+        drawRect(palette.neon.copy(alpha = breathe), Offset(0f, size.height * 0.72f + parallaxY), Size(size.width, 1f))
     }
 }
 
