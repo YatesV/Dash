@@ -6,7 +6,7 @@ plugins {
 android {
     namespace = "com.yates.dash"
     compileSdk = 35
-    defaultConfig { applicationId = "com.yates.dash"; minSdk = 24; targetSdk = 35; versionCode = 1; versionName = "1.0" }
+    defaultConfig { applicationId = "com.yates.dash"; minSdk = 24; targetSdk = 35; versionCode = 14; versionName = "1.0.14" }
     buildFeatures { compose = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
