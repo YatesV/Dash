@@ -24,7 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -470,7 +469,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
     if (showAdd) {
         AlertDialog(
             onDismissRequest = { showAdd = false; draft = "" },
-            colors = AlertDialogDefaults.colors(containerColor = Panel, titleContentColor = Neon, textContentColor = Color.White),
+            containerColor = Panel, titleContentColor = Neon, textContentColor = Color.White,
             title = { PixelText(addLabel, Neon, 9) },
             text = {
                 OutlinedTextField(
