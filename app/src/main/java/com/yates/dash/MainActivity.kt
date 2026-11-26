@@ -21,7 +21,12 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -173,9 +178,9 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
                 ) { page ->
                 when (page) {
                     "HOME" -> HomePage(onNavigate)
-                    "FOCUS" -> SimplePage("FOCUS", "PLAN YOUR DAY", listOf("INBOX", "TODAY'S PRIORITIES", "POMODORO TIMER", "UPCOMING TASKS"))
-                    "TRACK" -> SimplePage("TRACKER", "BUILD YOUR ROUTINES", listOf("HABITS", "WORKOUTS", "SLEEP", "PERSONAL GOALS"))
-                    "VAULT" -> SimplePage("VAULT", "YOUR PERSONAL LIBRARY", listOf("NOTES", "PROJECTS", "IDEAS", "FILES & LINKS"))
+                    "FOCUS" -> WorkspacePage("FOCUS", "YOUR TASK LIST", "dash_tasks", true, "ADD TASK")
+                    "TRACK" -> WorkspacePage("TRACKER", "DAILY HABITS", "dash_habits", true, "ADD HABIT")
+                    "VAULT" -> WorkspacePage("VAULT", "QUICK NOTES", "dash_notes", false, "SAVE NOTE")
                     "MONEY" -> SimplePage("MONEY", "KEEP AN EYE ON YOUR FINANCES", listOf("BALANCE OVERVIEW", "BUDGET", "SAVINGS GOALS", "TRANSACTIONS"))
                     "SETTINGS" -> SimplePage("SETTINGS", "MAKE DASH YOURS", listOf("APPEARANCE", "WIDGETS", "NOTIFICATIONS", "DATA & BACKUP"))
                     else -> SimplePage(page, "DASH MODULE", listOf("COMING SOON", "THIS SPACE IS READY FOR YOUR TOOLS"))
@@ -297,25 +302,101 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
 }
 
 @Composable
-private fun SimplePage(title: String, subtitle: String, items: List<String>) {
+private fun WorkspacePage(title: String, subtitle: String, storageKey: String, checkable: Boolean, addLabel: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("dash_workspace", android.content.Context.MODE_PRIVATE) }
+    val entries = remember(storageKey) {
+        androidx.compose.runtime.mutableStateListOf<String>().apply {
+            addAll(prefs.getStringSet(storageKey, emptySet()).orEmpty().sorted())
+        }
+    }
+    var draft by remember { mutableStateOf("") }
+    var showAdd by remember { mutableStateOf(false) }
+    fun save() { prefs.edit().putStringSet(storageKey, entries.toSet()).apply() }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         PixelText(title, Color.White, 15)
         Spacer(Modifier.height(10.dp))
         Text(subtitle, color = Neon, fontFamily = FontFamily.Monospace, fontSize = 10.sp, letterSpacing = 1.sp)
-        Spacer(Modifier.height(24.dp))
-        items.forEachIndexed { index, item ->
-            NeonPanel(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    PixelText("0${index + 1}", Neon, 8)
-                    Spacer(Modifier.width(15.dp))
-                    Text(item, color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.weight(1f))
-                    Text("＋", color = Neon, fontSize = 18.sp)
-                }
+        Spacer(Modifier.height(22.dp))
+        NeonPanel(Modifier.fillMaxWidth()) {
+            val done = entries.count { it.startsWith("1::") }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                PixelText(if (checkable) "PROGRESS" else "SAVED ITEMS", Mint, 7)
+                PixelText("\${entries.size} ITEMS", Neon, 7)
             }
-            Spacer(Modifier.height(11.dp))
+            if (checkable) {
+                Spacer(Modifier.height(10.dp))
+                Box(Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF1A2B19))) {
+                    Box(Modifier.fillMaxWidth(if (entries.isEmpty()) 0f else done.toFloat() / entries.size).fillMaxHeight().background(Neon))
+                }
+                Spacer(Modifier.height(7.dp))
+                Text("\$done OF \${entries.size} COMPLETED", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+            } else {
+                Spacer(Modifier.height(8.dp))
+                Text("Your notes are saved on this device.", color = Dim, fontSize = 11.sp)
+            }
         }
-        Spacer(Modifier.height(12.dp))
-        Text("MODULE PREVIEW  //  MORE FEATURES COMING", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = { showAdd = true }, modifier = Modifier.fillMaxWidth()) {
+            PixelText(addLabel, Color.Black, 8)
+        }
+        Spacer(Modifier.height(16.dp))
+        if (entries.isEmpty()) {
+            NeonPanel(Modifier.fillMaxWidth()) {
+                PixelText("NOTHING HERE YET", Mint, 8)
+                Spacer(Modifier.height(8.dp))
+                Text("Tap \$addLabel to create your first item.", color = Dim, fontSize = 11.sp)
+            }
+        } else {
+            entries.toList().forEach { entry ->
+                val complete = entry.startsWith("1::")
+                val label = if (checkable) entry.substringAfter("::") else entry
+                NeonPanel(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (checkable) {
+                            Checkbox(checked = complete, onCheckedChange = { checked ->
+                                val position = entries.indexOf(entry)
+                                if (position >= 0) entries[position] = (if (checked) "1::" else "0::") + label
+                                save()
+                            })
+                        }
+                        Text(label, color = if (complete) Dim else Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { entries.remove(entry); save() }) {
+                            Text("×", color = Neon, fontSize = 18.sp)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(9.dp))
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("LOCAL DATA // STORED ON THIS DEVICE", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+    }
+    if (showAdd) {
+        AlertDialog(
+            onDismissRequest = { showAdd = false; draft = "" },
+            title = { PixelText(addLabel, Neon, 9) },
+            text = {
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    placeholder = { Text(if (checkable) "What do you want to do?" else "Write a quick note...") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val value = draft.trim()
+                    if (value.isNotEmpty()) {
+                        entries.add(if (checkable) "0::" + value else value)
+                        save()
+                    }
+                    draft = ""
+                    showAdd = false
+                }) { Text("SAVE", color = Neon) }
+            },
+            dismissButton = { TextButton(onClick = { showAdd = false; draft = "" }) { Text("CANCEL") } }
+        )
     }
 }
+
