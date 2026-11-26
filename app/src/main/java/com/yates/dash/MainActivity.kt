@@ -166,11 +166,13 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
         while (x < this.size.width) {
             var y = 0f
             while (y < this.size.height) {
-                drawRect(Color(0xFF102010).copy(alpha = 0.18f), Offset(x, y), Size(1f, 1f))
+                drawRect(palette.neon.copy(alpha = 0.055f), Offset(x, y), Size(1.2f, 1.2f))
                 y += step
             }
             x += step
         }
+        drawCircle(Brush.radialGradient(listOf(palette.neon.copy(alpha = 0.13f), Color.Transparent), center = Offset(size.width * 0.16f + parallaxX * 2f, size.height * 0.16f + parallaxY * 2f), radius = size.width * 0.72f), radius = size.width * 0.72f, center = Offset(size.width * 0.16f + parallaxX * 2f, size.height * 0.16f + parallaxY * 2f))
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF1688FF).copy(alpha = 0.045f), Color.Transparent), center = Offset(size.width * 0.88f, size.height * 0.72f), radius = size.width * 0.55f), radius = size.width * 0.55f, center = Offset(size.width * 0.88f, size.height * 0.72f))
         // Deep parallax layer: slow drifting pixel stars.
         if (palette.particles) for (i in 0..58) {
             val depth = 0.25f + (i % 5) * 0.16f
@@ -216,6 +218,7 @@ private fun StartScreen(onStart: () -> Unit) {
 @Composable
 private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPaletteChange: (DashPalette) -> Unit, updateVersion: String?, updateUrl: String?) {
     val palette = LocalPalette.current
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     var dragX by remember { mutableFloatStateOf(0f) }
     var dragY by remember { mutableFloatStateOf(0f) }
     val px by animateFloatAsState(dragX, spring(dampingRatio = 0.72f, stiffness = 110f), label = "parallaxX")
@@ -235,7 +238,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPalett
         Backdrop(Modifier.fillMaxSize(), px, py)
         Column(Modifier.fillMaxSize().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
             if (updateVersion != null && updateUrl != null) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp).background(Neon.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).clickable { runCatching { androidx.compose.ui.platform.LocalUriHandler.current.openUri(updateUrl) } }.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp).background(Neon.copy(alpha = 0.12f), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).clickable { runCatching { uriHandler.openUri(updateUrl) } }.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("⬆", color = Neon, fontSize = 16.sp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
@@ -275,7 +278,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPalett
                 }
                 }
             }
-            Row(Modifier.fillMaxWidth().background(Color(0xFF050905)).border(width = 1.dp, color = Color(0xFF193019)).padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Row(Modifier.fillMaxWidth().background(Panel2).border(width = 1.dp, color = Neon.copy(alpha = 0.25f)).padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 NavItem("HOME", "⌂", active, onNavigate)
                 NavItem("FOCUS", "▣", active, onNavigate)
                 NavItem("TRACK", "✳", active, onNavigate)
@@ -363,7 +366,7 @@ private fun SectionTitle(title: String, detail: String) {
 @Composable
 private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val glow = LocalPalette.current.glow.coerceAtMost(1.5f)
-    Column(modifier.shadow((18f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.24f * glow), spotColor = Neon.copy(alpha = 0.20f * glow)).background(Panel, RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.35f * glow).coerceIn(0.12f, 1f)), RoundedCornerShape(4.dp)).padding(14.dp), content = content)
+    Column(modifier.shadow((11f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.17f * glow), spotColor = Neon.copy(alpha = 0.14f * glow)).background(Brush.linearGradient(listOf(Panel2.copy(alpha = 0.88f), Panel, Color.Black.copy(alpha = 0.78f))), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.42f * glow).coerceIn(0.14f, 0.8f)), RoundedCornerShape(4.dp)).padding(14.dp), content = content)
 }
 
 @Composable
@@ -371,11 +374,11 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
     var pressed by remember { mutableStateOf(false) }
     val t = rememberInfiniteTransition(label = "cardGlow")
     val glow = LocalPalette.current.glow
-    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
-    val floatY by t.animateFloat(0f, -4f, infiniteRepeatable(tween(2100 + module.title.length * 85, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
+    val alpha by t.animateFloat(0.18f, 0.46f, infiniteRepeatable(tween(1900), RepeatMode.Reverse), label = "alpha")
+    val floatY by t.animateFloat(0f, -1.8f, infiniteRepeatable(tween(2600 + module.title.length * 100, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
     Column(modifier.height(106.dp)
         .graphicsLayer { translationY = floatY }
-        .shadow((18f * glow).dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.48f * glow.coerceAtMost(1.5f)), spotColor = Neon.copy(alpha = alpha * 0.42f * glow.coerceAtMost(1.5f)))
+        .shadow((10f * glow).dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f * glow.coerceAtMost(1.5f)), spotColor = Neon.copy(alpha = alpha * 0.30f * glow.coerceAtMost(1.5f)))
         .background(Brush.linearGradient(listOf(Color(0xFF112311), Panel2, Color(0xFF071007))), RoundedCornerShape(3.dp))
         .border(1.dp, Neon.copy(alpha = if (pressed) 1f else alpha), RoundedCornerShape(3.dp))
         .clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
