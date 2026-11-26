@@ -65,7 +65,7 @@ private data class DashPalette(
     val neon: Color, val mint: Color, val dim: Color,
     val particles: Boolean = true, val scanlines: Boolean = true, val parallax: Boolean = true, val glow: Float = 1f
 )
-private val DefaultPalette = DashPalette("CYBER GREEN", Color(0xFF030506), Color(0xD9070C0A), Color(0xFF0A1715), Color(0xFF00FF72), Color(0xFF9DFFCD), Color(0xFF718C82))
+private val DefaultPalette = DashPalette("CYBER GREEN", Color(0xFF030506), Color(0xFF102719), Color(0xFF153522), Color(0xFF00FF72), Color(0xFF9DFFCD), Color(0xFF718C82))
 private val LocalPalette = androidx.compose.runtime.staticCompositionLocalOf { DefaultPalette }
 private val Void: Color @Composable get() = LocalPalette.current.background
 private val Panel: Color @Composable get() = LocalPalette.current.panel
@@ -203,7 +203,7 @@ private fun StartScreen(onStart: () -> Unit) {
             Box(
                 Modifier.fillMaxWidth().height(76.dp)
                     .shadow(pulse.dp, RoundedCornerShape(3.dp), ambientColor = palette.neon, spotColor = palette.neon)
-                    .background(Brush.horizontalGradient(listOf(palette.panel2, palette.neon.copy(alpha = 0.18f), palette.panel2)), RoundedCornerShape(3.dp))
+                    .background(Brush.horizontalGradient(listOf(Color(0xFF17472A), Color(0xFF0E2A19), Color(0xFF17472A))), RoundedCornerShape(3.dp))
                     .border(2.dp, palette.neon.copy(alpha = 0.75f + shimmer * 0.25f), RoundedCornerShape(3.dp))
                     .clickable(onClick = onStart),
                 contentAlignment = Alignment.Center
@@ -324,7 +324,7 @@ private fun HomePage(onNavigate: (String) -> Unit) {
                 PixelText("01", Neon, 16)
             }
             Spacer(Modifier.height(18.dp))
-            Box(Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF1A2B19))) {
+            Box(Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF315B3B))) {
                 Box(Modifier.fillMaxWidth(0.38f).fillMaxHeight().background(Neon))
             }
             Spacer(Modifier.height(7.dp))
@@ -366,7 +366,7 @@ private fun SectionTitle(title: String, detail: String) {
 @Composable
 private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val glow = LocalPalette.current.glow.coerceAtMost(1.5f)
-    Column(modifier.shadow((11f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.22f * glow), spotColor = Neon.copy(alpha = 0.18f * glow)).background(Brush.linearGradient(listOf(Color(0xFF102719), Color(0xFF0B1911), Color(0xFF08120C))), RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.62f * glow).coerceIn(0.28f, 0.9f)), RoundedCornerShape(4.dp)).padding(16.dp), content = content)
+    Column(modifier.shadow((14f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.30f * glow), spotColor = Neon.copy(alpha = 0.24f * glow)).background(Brush.linearGradient(listOf(Color(0xFF163D25), Color(0xFF102D1B), Color(0xFF0C2416))), RoundedCornerShape(4.dp)).border(1.5.dp, Neon.copy(alpha = (0.78f * glow).coerceIn(0.42f, 1f)), RoundedCornerShape(4.dp)).padding(18.dp), content = content)
 }
 
 @Composable
@@ -379,7 +379,7 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
     Column(modifier.height(106.dp)
         .graphicsLayer { translationY = floatY }
         .shadow((10f * glow).dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f * glow.coerceAtMost(1.5f)), spotColor = Neon.copy(alpha = alpha * 0.30f * glow.coerceAtMost(1.5f)))
-        .background(Brush.linearGradient(listOf(Color(0xFF153522), Color(0xFF0D1D13), Color(0xFF09130D))), RoundedCornerShape(3.dp))
+        .background(Brush.linearGradient(listOf(Color(0xFF205A34), Color(0xFF174329), Color(0xFF102F1D))), RoundedCornerShape(3.dp))
         .border(1.dp, Neon.copy(alpha = if (pressed) 1f else maxOf(alpha, 0.48f)), RoundedCornerShape(3.dp))
         .clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -389,7 +389,7 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
         Column {
             PixelText(module.title, Color.White, 7)
             Spacer(Modifier.height(5.dp))
-            Text(module.subtitle, color = Dim, fontSize = 9.sp, maxLines = 1)
+            Text(module.subtitle, color = Color(0xFFB2D9BE), fontSize = 9.sp, maxLines = 1)
         }
     }
 }
