@@ -42,13 +42,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Void = Color(0xFF030603)
-private val Panel = Color(0xFF091109)
-private val Panel2 = Color(0xFF0D180D)
-private val Neon = Color(0xFF39FF14)
-private val Mint = Color(0xFFB6FF9F)
-private val Dim = Color(0xFF71816D)
-private val Pixel = FontFamily(Font(R.font.press_start_2p))
+private val Void = Color(0xFF030506)
+private val Panel = Color(0xD9070C0A)
+private val Panel2 = Color(0xFF0A1715)
+private val Neon = Color(0xFF00FF72)
+private val Mint = Color(0xFF9DFFCD)
+private val Dim = Color(0xFF718C82)
+private val Pixel = FontFamily(Font(R.font.pixelite))
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

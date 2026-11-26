@@ -26,6 +26,18 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Fetch and convert original Pixelite font
+        run: |
+          python -m pip install --quiet fonttools brotli
+          curl -fsSL https://raw.githubusercontent.com/YatesV/yatesv.github.io/main/fonts/Pixelite.woff2 -o /tmp/Pixelite.woff2
+          mkdir -p app/src/main/res/font
+          python - <<'PY'
+          from fontTools.ttLib import TTFont
+          font = TTFont("/tmp/Pixelite.woff2")
+          font.flavor = None
+          font.save("app/src/main/res/font/pixelite.ttf")
+          PY
+
       - name: Build APK
         run: gradle assembleDebug
 
@@ -40,7 +52,7 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: Dash v1.0.${{ github.run_number }}
