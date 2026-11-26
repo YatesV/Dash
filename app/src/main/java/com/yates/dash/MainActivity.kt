@@ -2,6 +2,7 @@ package com.yates.dash
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -28,6 +29,8 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -47,12 +50,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Void = Color(0xFF030506)
-private val Panel = Color(0xD9070C0A)
-private val Panel2 = Color(0xFF0A1715)
-private val Neon = Color(0xFF00FF72)
-private val Mint = Color(0xFF9DFFCD)
-private val Dim = Color(0xFF718C82)
+private data class DashPalette(
+    val name: String, val background: Color, val panel: Color, val panel2: Color,
+    val neon: Color, val mint: Color, val dim: Color,
+    val particles: Boolean = true, val scanlines: Boolean = true, val parallax: Boolean = true, val glow: Float = 1f
+)
+private val DefaultPalette = DashPalette("CYBER GREEN", Color(0xFF030506), Color(0xD9070C0A), Color(0xFF0A1715), Color(0xFF00FF72), Color(0xFF9DFFCD), Color(0xFF718C82))
+private val LocalPalette = androidx.compose.runtime.staticCompositionLocalOf { DefaultPalette }
+private val Void: Color @Composable get() = LocalPalette.current.background
+private val Panel: Color @Composable get() = LocalPalette.current.panel
+private val Panel2: Color @Composable get() = LocalPalette.current.panel2
+private val Neon: Color @Composable get() = LocalPalette.current.neon
+private val Mint: Color @Composable get() = LocalPalette.current.mint
+private val Dim: Color @Composable get() = LocalPalette.current.dim
 private val Pixel = FontFamily(Font(R.font.pixelite))
 
 class MainActivity : ComponentActivity() {
@@ -66,10 +76,39 @@ private data class Module(val title: String, val subtitle: String, val symbol: S
 
 @Composable
 private fun DashApp() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("dash_appearance", android.content.Context.MODE_PRIVATE) }
     var started by remember { mutableStateOf(false) }
     var active by remember { mutableStateOf("HOME") }
-    if (!started) StartScreen { started = true }
-    else MainDashboard(active = active, onNavigate = { active = it })
+    var palette by remember {
+        mutableStateOf(DefaultPalette.copy(
+            name = prefs.getString("theme_name", DefaultPalette.name) ?: DefaultPalette.name,
+            background = Color(prefs.getInt("background", DefaultPalette.background.value.toLong().toInt())),
+            panel = Color(prefs.getInt("panel", DefaultPalette.panel.value.toLong().toInt())),
+            panel2 = Color(prefs.getInt("panel2", DefaultPalette.panel2.value.toLong().toInt())),
+            neon = Color(prefs.getInt("neon", DefaultPalette.neon.value.toLong().toInt())),
+            mint = Color(prefs.getInt("mint", DefaultPalette.mint.value.toLong().toInt())),
+            dim = Color(prefs.getInt("dim", DefaultPalette.dim.value.toLong().toInt())),
+            particles = prefs.getBoolean("particles", true), scanlines = prefs.getBoolean("scanlines", true),
+            parallax = prefs.getBoolean("parallax", true), glow = prefs.getFloat("glow", 1f)
+        ))
+    }
+    fun updatePalette(next: DashPalette) {
+        palette = next
+        prefs.edit().putString("theme_name", next.name)
+            .putInt("background", next.background.value.toLong().toInt())
+            .putInt("panel", next.panel.value.toLong().toInt()).putInt("panel2", next.panel2.value.toLong().toInt())
+            .putInt("neon", next.neon.value.toLong().toInt()).putInt("mint", next.mint.value.toLong().toInt())
+            .putInt("dim", next.dim.value.toLong().toInt()).putBoolean("particles", next.particles)
+            .putBoolean("scanlines", next.scanlines).putBoolean("parallax", next.parallax).putFloat("glow", next.glow).apply()
+    }
+    BackHandler(enabled = started || active != "HOME") {
+        if (active != "HOME") active = "HOME" else started = false
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalPalette provides palette) {
+        if (!started) StartScreen { started = true }
+        else MainDashboard(active = active, onNavigate = { active = it }, onPaletteChange = ::updatePalette)
+    }
 }
 
 @Composable
@@ -83,6 +122,7 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
     val drift by transition.animateFloat(-28f, 28f, infiniteRepeatable(tween(6500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
     val scan by transition.animateFloat(-80f, 1.2f, infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Restart), label = "scan")
     val breathe by transition.animateFloat(0.10f, 0.24f, infiniteRepeatable(tween(2600), RepeatMode.Reverse), label = "breathe")
+    val palette = LocalPalette.current
     Canvas(modifier.fillMaxSize()) {
         val step = 34f
         var x = 0f
@@ -95,7 +135,7 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
             x += step
         }
         // Deep parallax layer: slow drifting pixel stars.
-        for (i in 0..34) {
+        if (palette.particles) for (i in 0..58) {
             val depth = 0.25f + (i % 5) * 0.16f
             val sx = ((i * 79f + drift * (if (i % 2 == 0) 1 else -1) * depth + parallaxX * depth * 2f) % this.size.width + this.size.width) % this.size.width
             val sy = ((i * 137f + parallaxY * depth * 2f) % this.size.height)
@@ -104,7 +144,7 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
         }
         // Sweeping scan beam and soft ambient horizon glow.
         val beamY = size.height * scan
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Neon.copy(alpha = 0.055f), Color.Transparent), startY = beamY - 35f, endY = beamY + 35f), Offset(0f, beamY - 35f), Size(size.width, 70f))
+        if (palette.scanlines) drawRect(Brush.verticalGradient(listOf(Color.Transparent, Neon.copy(alpha = 0.10f), Color.Transparent), startY = beamY - 48f, endY = beamY + 48f), Offset(0f, beamY - 48f), Size(size.width, 96f))
         drawRect(Neon.copy(alpha = breathe), Offset(0f, size.height * 0.72f + parallaxY), Size(size.width, 1f))
     }
 }
@@ -137,14 +177,15 @@ private fun StartScreen(onStart: () -> Unit) {
 }
 
 @Composable
-private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
+private fun MainDashboard(active: String, onNavigate: (String) -> Unit, onPaletteChange: (DashPalette) -> Unit) {
+    val palette = LocalPalette.current
     var dragX by remember { mutableFloatStateOf(0f) }
     var dragY by remember { mutableFloatStateOf(0f) }
     val px by animateFloatAsState(dragX, spring(dampingRatio = 0.72f, stiffness = 110f), label = "parallaxX")
     val py by animateFloatAsState(dragY, spring(dampingRatio = 0.72f, stiffness = 110f), label = "parallaxY")
     Box(
         Modifier.fillMaxSize().background(Void)
-            .pointerInput(Unit) {
+            .then(if (palette.parallax) Modifier.pointerInput(Unit) {
                 detectDragGestures(
                     onDragEnd = { dragX = 0f; dragY = 0f },
                     onDragCancel = { dragX = 0f; dragY = 0f }
@@ -152,7 +193,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
                     dragX = (dragX + amount.x * 0.045f).coerceIn(-18f, 18f)
                     dragY = (dragY + amount.y * 0.045f).coerceIn(-18f, 18f)
                 }
-            }
+            } else Modifier)
     ) {
         Backdrop(Modifier.fillMaxSize(), px, py)
         Column(Modifier.fillMaxSize().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
@@ -181,7 +222,7 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
                     "TRACK" -> WorkspacePage("TRACKER", "DAILY HABITS", "dash_habits", true, "ADD HABIT")
                     "VAULT" -> WorkspacePage("VAULT", "QUICK NOTES", "dash_notes", false, "SAVE NOTE")
                     "MONEY" -> SimplePage("MONEY", "KEEP AN EYE ON YOUR FINANCES", listOf("BALANCE OVERVIEW", "BUDGET", "SAVINGS GOALS", "TRANSACTIONS"))
-                    "SETTINGS" -> SimplePage("SETTINGS", "MAKE DASH YOURS", listOf("APPEARANCE", "WIDGETS", "NOTIFICATIONS", "DATA & BACKUP"))
+                    "SETTINGS" -> SettingsPage(palette, onPaletteChange)
                     else -> SimplePage(page, "DASH MODULE", listOf("COMING SOON", "THIS SPACE IS READY FOR YOUR TOOLS"))
                 }
                 }
@@ -420,5 +461,76 @@ private fun SimplePage(title: String, subtitle: String, items: List<String>) {
         }
         Spacer(Modifier.height(12.dp))
         Text("MODULE PREVIEW // MORE FEATURES COMING", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+    }
+}
+ 
+@Composable
+private fun SettingsPage(palette: DashPalette, onChange: (DashPalette) -> Unit) {
+    val presets = listOf(
+        DefaultPalette,
+        DashPalette("ICE BLUE", Color(0xFF030611), Color(0xD9071020), Color(0xFF0A1728), Color(0xFF35C8FF), Color(0xFFB4ECFF), Color(0xFF718AA5)),
+        DashPalette("VIOLET", Color(0xFF08030D), Color(0xD910071B), Color(0xFF190B29), Color(0xFFBD65FF), Color(0xFFE6C4FF), Color(0xFF9B82AD)),
+        DashPalette("AMBER", Color(0xFF090603), Color(0xD9140D05), Color(0xFF211507), Color(0xFFFFB52E), Color(0xFFFFE0A0), Color(0xFFAA936D)),
+        DashPalette("CRIMSON", Color(0xFF090305), Color(0xD916070A), Color(0xFF230B12), Color(0xFFFF426D), Color(0xFFFFB4C5), Color(0xFFAA7886))
+    )
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp)) {
+        PixelText("SETTINGS", Color.White, 15)
+        Spacer(Modifier.height(8.dp))
+        Text("TUNE EVERY PART OF YOUR DASH EXPERIENCE", color = Neon, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+        Spacer(Modifier.height(20.dp))
+        NeonPanel(Modifier.fillMaxWidth()) {
+            PixelText("PRESET THEMES", Mint, 8)
+            Spacer(Modifier.height(12.dp))
+            presets.forEach { preset ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { onChange(preset.copy(particles = palette.particles, scanlines = palette.scanlines, parallax = palette.parallax, glow = palette.glow)) }, verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(24.dp).background(preset.neon, RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(4.dp)))
+                    Spacer(Modifier.width(12.dp))
+                    Text(preset.name, color = if (palette.name == preset.name) Neon else Color.White, fontFamily = FontFamily.Monospace, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                    if (palette.name == preset.name) Text("✓ ACTIVE", color = Neon, fontSize = 8.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        NeonPanel(Modifier.fillMaxWidth()) {
+            PixelText("LIVE EFFECTS", Mint, 8)
+            Spacer(Modifier.height(12.dp))
+            SettingSwitch("PARTICLE FIELD", "Floating pixel stars", palette.particles) { onChange(palette.copy(particles = it)) }
+            SettingSwitch("SCAN BEAM", "Animated light sweep", palette.scanlines) { onChange(palette.copy(scanlines = it)) }
+            SettingSwitch("TOUCH PARALLAX", "Depth movement while dragging", palette.parallax) { onChange(palette.copy(parallax = it)) }
+            Spacer(Modifier.height(8.dp))
+            Text("GLOW INTENSITY  \${(palette.glow * 100).toInt()}%", color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Slider(value = palette.glow, onValueChange = { onChange(palette.copy(glow = it)) }, valueRange = 0f..2f)
+        }
+        Spacer(Modifier.height(12.dp))
+        NeonPanel(Modifier.fillMaxWidth()) {
+            PixelText("CUSTOM ACCENT", Mint, 8)
+            Spacer(Modifier.height(10.dp))
+            Text("Choose a custom glow color without changing your background preset.", color = Dim, fontSize = 10.sp)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf(Color(0xFF00FF72), Color(0xFF35C8FF), Color(0xFFBD65FF), Color(0xFFFFB52E), Color(0xFFFF426D), Color.White).forEach { swatch ->
+                    Box(Modifier.size(34.dp).background(swatch, RoundedCornerShape(4.dp)).border(if (palette.neon == swatch) 2.dp else 1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(4.dp)).clickable { onChange(palette.copy(name = "CUSTOM", neon = swatch, mint = swatch.copy(alpha = 0.72f))) })
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        NeonPanel(Modifier.fillMaxWidth()) {
+            PixelText("DISPLAY", Mint, 8)
+            Spacer(Modifier.height(8.dp))
+            Text("The selected appearance is saved automatically on this device.", color = Dim, fontSize = 10.sp)
+            Text("DASH // PERSONAL COMMAND CENTER", color = Neon, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SettingSwitch(title: String, description: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Text(description, color = Dim, fontSize = 9.sp)
+        }
+        Switch(checked = checked, onCheckedChange = onChecked)
     }
 }
