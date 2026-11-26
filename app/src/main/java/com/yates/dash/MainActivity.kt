@@ -399,3 +399,26 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
     }
 }
 
+@Composable
+private fun SimplePage(title: String, subtitle: String, items: List<String>) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+        PixelText(title, Color.White, 15)
+        Spacer(Modifier.height(10.dp))
+        Text(subtitle, color = Neon, fontFamily = FontFamily.Monospace, fontSize = 10.sp, letterSpacing = 1.sp)
+        Spacer(Modifier.height(24.dp))
+        items.forEachIndexed { index, item ->
+            NeonPanel(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PixelText("0${index + 1}", Neon, 8)
+                    Spacer(Modifier.width(15.dp))
+                    Text(item, color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Text("＋", color = Neon, fontSize = 18.sp)
+                }
+            }
+            Spacer(Modifier.height(11.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("MODULE PREVIEW // MORE FEATURES COMING", color = Dim, fontFamily = FontFamily.Monospace, fontSize = 8.sp)
+    }
+}
