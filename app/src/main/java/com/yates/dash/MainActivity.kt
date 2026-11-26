@@ -190,8 +190,9 @@ private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, paral
 
 @Composable
 private fun StartScreen(onStart: () -> Unit) {
+    val palette = LocalPalette.current
     val t = rememberInfiniteTransition(label = "startGlow")
-    val pulse by t.animateFloat(8f, 34f, infiniteRepeatable(tween(1050, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
+    val pulse by t.animateFloat(7f, 21f, infiniteRepeatable(tween(1050, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
     val shimmer by t.animateFloat(0f, 1f, infiniteRepeatable(tween(2200, easing = LinearEasing), RepeatMode.Restart), label = "shimmer")
     Box(Modifier.fillMaxSize().background(Void)) {
         Backdrop()
@@ -202,9 +203,9 @@ private fun StartScreen(onStart: () -> Unit) {
             Spacer(Modifier.height(66.dp))
             Box(
                 Modifier.fillMaxWidth().height(76.dp)
-                    .shadow(pulse.dp, RoundedCornerShape(3.dp), ambientColor = Neon, spotColor = Neon)
-                    .background(Brush.horizontalGradient(listOf(Color(0xFF071507), Color(0xFF153414), Color(0xFF071507))), RoundedCornerShape(3.dp))
-                    .border(2.dp, Neon.copy(alpha = 0.75f + shimmer * 0.25f), RoundedCornerShape(3.dp))
+                    .shadow(pulse.dp, RoundedCornerShape(3.dp), ambientColor = palette.neon, spotColor = palette.neon)
+                    .background(Brush.horizontalGradient(listOf(palette.panel2, palette.neon.copy(alpha = 0.18f), palette.panel2)), RoundedCornerShape(3.dp))
+                    .border(2.dp, palette.neon.copy(alpha = 0.75f + shimmer * 0.25f), RoundedCornerShape(3.dp))
                     .clickable(onClick = onStart),
                 contentAlignment = Alignment.Center
             ) { PixelText("START", Color.White, 14) }
@@ -455,7 +456,7 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
                             }, colors = CheckboxDefaults.colors(checkedColor = Neon, uncheckedColor = Dim, checkmarkColor = Void))
                         }
                         Text(label, color = if (complete) Dim else Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { entries.remove(entry); save() }) {
+                        TextButton(onClick = { entries.remove(entry); save() }, colors = ButtonDefaults.textButtonColors(contentColor = Neon)) {
                             Text("×", color = Neon, fontSize = 18.sp)
                         }
                     }
@@ -488,9 +489,9 @@ private fun WorkspacePage(title: String, subtitle: String, storageKey: String, c
                     }
                     draft = ""
                     showAdd = false
-                }) { Text("SAVE", color = Neon) }
+                }, colors = ButtonDefaults.textButtonColors(contentColor = Neon)) { Text("SAVE", color = Neon) }
             },
-            dismissButton = { TextButton(onClick = { showAdd = false; draft = "" }) { Text("CANCEL") } }
+            dismissButton = { TextButton(onClick = { showAdd = false; draft = "" }, colors = ButtonDefaults.textButtonColors(contentColor = Neon)) { Text("CANCEL") } }
         )
     }
 }
