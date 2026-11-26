@@ -3,11 +3,17 @@ package com.yates.dash
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -26,6 +32,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,9 +73,11 @@ private fun PixelText(value: String, color: Color = Neon, size: Int = 10, modifi
 }
 
 @Composable
-private fun Backdrop(modifier: Modifier = Modifier) {
+private fun Backdrop(modifier: Modifier = Modifier, parallaxX: Float = 0f, parallaxY: Float = 0f) {
     val transition = rememberInfiniteTransition(label = "ambient")
-    val drift by transition.animateFloat(-18f, 18f, infiniteRepeatable(tween(6500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+    val drift by transition.animateFloat(-28f, 28f, infiniteRepeatable(tween(6500, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "drift")
+    val scan by transition.animateFloat(-80f, 1.2f, infiniteRepeatable(tween(5200, easing = LinearEasing), RepeatMode.Restart), label = "scan")
+    val breathe by transition.animateFloat(0.10f, 0.24f, infiniteRepeatable(tween(2600), RepeatMode.Reverse), label = "breathe")
     Canvas(modifier.fillMaxSize()) {
         val step = 34f
         var x = 0f
@@ -78,12 +89,18 @@ private fun Backdrop(modifier: Modifier = Modifier) {
             }
             x += step
         }
-        for (i in 0..24) {
-            val sx = ((i * 79f + drift * (if (i % 2 == 0) 1 else -1)) % this.size.width + this.size.width) % this.size.width
-            val sy = ((i * 137f) % this.size.height)
-            val a = if (i % 3 == 0) 0.55f else 0.2f
-            drawRect(Neon.copy(alpha = a), Offset(sx, sy), Size(if (i % 4 == 0) 3f else 2f, if (i % 4 == 0) 3f else 2f))
+        // Deep parallax layer: slow drifting pixel stars.
+        for (i in 0..34) {
+            val depth = 0.25f + (i % 5) * 0.16f
+            val sx = ((i * 79f + drift * (if (i % 2 == 0) 1 else -1) * depth + parallaxX * depth * 2f) % this.size.width + this.size.width) % this.size.width
+            val sy = ((i * 137f + parallaxY * depth * 2f) % this.size.height)
+            val a = if (i % 3 == 0) 0.72f else 0.28f
+            drawRect(Neon.copy(alpha = a), Offset(sx, sy), Size(if (i % 4 == 0) 3.5f else 2f, if (i % 4 == 0) 3.5f else 2f))
         }
+        // Sweeping scan beam and soft ambient horizon glow.
+        val beamY = size.height * scan
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Neon.copy(alpha = 0.055f), Color.Transparent), startY = beamY - 35f, endY = beamY + 35f), Offset(0f, beamY - 35f), Size(size.width, 70f))
+        drawRect(Neon.copy(alpha = breathe), Offset(0f, size.height * 0.72f + parallaxY), Size(size.width, 1f))
     }
 }
 
@@ -116,9 +133,25 @@ private fun StartScreen(onStart: () -> Unit) {
 
 @Composable
 private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
-    Box(Modifier.fillMaxSize().background(Void)) {
-        Backdrop()
-        Column(Modifier.fillMaxSize()) {
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
+    val px by animateFloatAsState(dragX, spring(dampingRatio = 0.72f, stiffness = 110f), label = "parallaxX")
+    val py by animateFloatAsState(dragY, spring(dampingRatio = 0.72f, stiffness = 110f), label = "parallaxY")
+    Box(
+        Modifier.fillMaxSize().background(Void)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragEnd = { dragX = 0f; dragY = 0f },
+                    onDragCancel = { dragX = 0f; dragY = 0f }
+                ) { change, amount ->
+                    change.consume()
+                    dragX = (dragX + amount.x * 0.045f).coerceIn(-18f, 18f)
+                    dragY = (dragY + amount.y * 0.045f).coerceIn(-18f, 18f)
+                }
+            }
+    ) {
+        Backdrop(Modifier.fillMaxSize(), px, py)
+        Column(Modifier.fillMaxSize().graphicsLayer { translationX = -px * 0.22f; translationY = -py * 0.22f }) {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     PixelText("DASH", Color.White, 15)
@@ -130,14 +163,23 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
                 }
             }
             Box(Modifier.weight(1f)) {
-                when (active) {
+                AnimatedContent(
+                    targetState = active,
+                    transitionSpec = {
+                        (fadeIn(tween(260)) + scaleIn(initialScale = 0.975f, animationSpec = tween(320))) togetherWith
+                            (fadeOut(tween(170)) + scaleOut(targetScale = 1.025f, animationSpec = tween(170)))
+                    },
+                    label = "dashboardPageTransition"
+                ) { page ->
+                when (page) {
                     "HOME" -> HomePage(onNavigate)
                     "FOCUS" -> SimplePage("FOCUS", "PLAN YOUR DAY", listOf("INBOX", "TODAY'S PRIORITIES", "POMODORO TIMER", "UPCOMING TASKS"))
                     "TRACK" -> SimplePage("TRACKER", "BUILD YOUR ROUTINES", listOf("HABITS", "WORKOUTS", "SLEEP", "PERSONAL GOALS"))
                     "VAULT" -> SimplePage("VAULT", "YOUR PERSONAL LIBRARY", listOf("NOTES", "PROJECTS", "IDEAS", "FILES & LINKS"))
                     "MONEY" -> SimplePage("MONEY", "KEEP AN EYE ON YOUR FINANCES", listOf("BALANCE OVERVIEW", "BUDGET", "SAVINGS GOALS", "TRANSACTIONS"))
                     "SETTINGS" -> SimplePage("SETTINGS", "MAKE DASH YOURS", listOf("APPEARANCE", "WIDGETS", "NOTIFICATIONS", "DATA & BACKUP"))
-                    else -> SimplePage(active, "DASH MODULE", listOf("COMING SOON", "THIS SPACE IS READY FOR YOUR TOOLS"))
+                    else -> SimplePage(page, "DASH MODULE", listOf("COMING SOON", "THIS SPACE IS READY FOR YOUR TOOLS"))
+                }
                 }
             }
             Row(Modifier.fillMaxWidth().background(Color(0xFF050905)).border(width = 1.dp, color = Color(0xFF193019)).padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -234,8 +276,14 @@ private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable Column
 private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: () -> Unit) {
     var pressed by remember { mutableStateOf(false) }
     val t = rememberInfiniteTransition(label = "cardGlow")
-    val alpha by t.animateFloat(0.28f, 0.62f, infiniteRepeatable(tween(1700), RepeatMode.Reverse), label = "alpha")
-    Column(modifier.height(106.dp).shadow(8.dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.25f), spotColor = Neon.copy(alpha = alpha * 0.2f)).background(Panel2, RoundedCornerShape(3.dp)).border(1.dp, Neon.copy(alpha = if (pressed) 0.9f else alpha), RoundedCornerShape(3.dp)).clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
+    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
+    val floatY by t.animateFloat(0f, -4f, infiniteRepeatable(tween(2100 + module.title.length * 85, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
+    Column(modifier.height(106.dp)
+        .graphicsLayer { translationY = floatY; translationZ = 2f }
+        .shadow(12.dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f), spotColor = Neon.copy(alpha = alpha * 0.28f))
+        .background(Brush.linearGradient(listOf(Color(0xFF112311), Panel2, Color(0xFF071007))), RoundedCornerShape(3.dp))
+        .border(1.dp, Neon.copy(alpha = if (pressed) 1f else alpha), RoundedCornerShape(3.dp))
+        .clickable { pressed = !pressed; onClick() }.padding(11.dp), verticalArrangement = Arrangement.SpaceBetween) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text(module.symbol, color = Neon, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Text("↗", color = Dim, fontSize = 12.sp)
