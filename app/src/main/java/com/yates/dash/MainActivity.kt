@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -39,7 +40,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -149,7 +149,6 @@ private fun MainDashboard(active: String, onNavigate: (String) -> Unit) {
                     onDragEnd = { dragX = 0f; dragY = 0f },
                     onDragCancel = { dragX = 0f; dragY = 0f }
                 ) { change, amount ->
-                    change.consume()
                     dragX = (dragX + amount.x * 0.045f).coerceIn(-18f, 18f)
                     dragY = (dragY + amount.y * 0.045f).coerceIn(-18f, 18f)
                 }
@@ -284,7 +283,7 @@ private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: (
     val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
     val floatY by t.animateFloat(0f, -4f, infiniteRepeatable(tween(2100 + module.title.length * 85, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
     Column(modifier.height(106.dp)
-        .graphicsLayer { translationY = floatY; translationZ = 2f }
+        .graphicsLayer { translationY = floatY }
         .shadow(12.dp, RoundedCornerShape(3.dp), ambientColor = Neon.copy(alpha = alpha * 0.34f), spotColor = Neon.copy(alpha = alpha * 0.28f))
         .background(Brush.linearGradient(listOf(Color(0xFF112311), Panel2, Color(0xFF071007))), RoundedCornerShape(3.dp))
         .border(1.dp, Neon.copy(alpha = if (pressed) 1f else alpha), RoundedCornerShape(3.dp))
