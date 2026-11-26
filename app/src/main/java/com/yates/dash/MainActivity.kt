@@ -314,14 +314,16 @@ private fun SectionTitle(title: String, detail: String) {
 
 @Composable
 private fun NeonPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.shadow(13.dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.13f), spotColor = Neon.copy(alpha = 0.12f)).background(Panel, RoundedCornerShape(4.dp)).border(1.dp, Color(0xFF244424), RoundedCornerShape(4.dp)).padding(14.dp), content = content)
+    val glow = LocalPalette.current.glow.coerceAtMost(1.5f)
+    Column(modifier.shadow((18f * glow).dp, RoundedCornerShape(4.dp), ambientColor = Neon.copy(alpha = 0.24f * glow), spotColor = Neon.copy(alpha = 0.20f * glow)).background(Panel, RoundedCornerShape(4.dp)).border(1.dp, Neon.copy(alpha = (0.35f * glow).coerceIn(0.12f, 1f)), RoundedCornerShape(4.dp)).padding(14.dp), content = content)
 }
 
 @Composable
 private fun ModuleCard(module: Module, modifier: Modifier = Modifier, onClick: () -> Unit) {
     var pressed by remember { mutableStateOf(false) }
     val t = rememberInfiniteTransition(label = "cardGlow")
-    val glow = LocalPalette.current.glow\n    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
+    val glow = LocalPalette.current.glow
+    val alpha by t.animateFloat(0.22f, 0.78f, infiniteRepeatable(tween(1450), RepeatMode.Reverse), label = "alpha")
     val floatY by t.animateFloat(0f, -4f, infiniteRepeatable(tween(2100 + module.title.length * 85, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
     Column(modifier.height(106.dp)
         .graphicsLayer { translationY = floatY }
