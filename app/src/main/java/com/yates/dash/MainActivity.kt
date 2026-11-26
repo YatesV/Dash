@@ -553,7 +553,7 @@ private fun SettingsPage(palette: DashPalette, onChange: (DashPalette) -> Unit) 
             SettingSwitch("SCAN BEAM", "Animated light sweep", palette.scanlines) { onChange(palette.copy(scanlines = it)) }
             SettingSwitch("TOUCH PARALLAX", "Depth movement while dragging", palette.parallax) { onChange(palette.copy(parallax = it)) }
             Spacer(Modifier.height(8.dp))
-            Text("GLOW INTENSITY  \${(palette.glow * 100).toInt()}%", color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
+            Text("GLOW INTENSITY  ${(palette.glow * 100).toInt()}%", color = Color.White, fontFamily = FontFamily.Monospace, fontSize = 9.sp)
             Slider(value = palette.glow, onValueChange = { onChange(palette.copy(glow = it)) }, valueRange = 0f..2f, colors = SliderDefaults.colors(thumbColor = Neon, activeTrackColor = Neon, inactiveTrackColor = Dim))
         }
         Spacer(Modifier.height(12.dp))
